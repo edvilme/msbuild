@@ -7,20 +7,20 @@ using Microsoft.Build.Framework;
 namespace Microsoft.Build.Logging.FancyLogger
 { 
 
-    public class FancyLoggerTargetNode
+    internal class FancyLoggerTargetNode
     {
-        public int Id;
-        public string TargetName;
-        public FancyLoggerTaskNode? CurrentTaskNode;
-        public FancyLoggerTargetNode(TargetStartedEventArgs args)
+        internal int Id;
+        internal string TargetName;
+        internal string CurrentTaskName;
+        internal FancyLoggerTargetNode(TargetStartedEventArgs args)
         {
             Id = args.BuildEventContext!.TargetId;
             TargetName = args.TargetName;
+            CurrentTaskName = string.Empty;
         }
-        public FancyLoggerTaskNode AddTask(TaskStartedEventArgs args)
+        internal void AddTask(TaskStartedEventArgs args)
         {
-            CurrentTaskNode = new FancyLoggerTaskNode(args);
-            return CurrentTaskNode;
+            CurrentTaskName = args.TaskName;
         }
     }
 }

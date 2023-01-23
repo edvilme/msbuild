@@ -8,23 +8,23 @@ using Microsoft.Build.Framework;
 namespace Microsoft.Build.Logging.FancyLogger
 { 
 
-    public class FancyLoggerMessageNode
+    internal class FancyLoggerMessageNode
     {
         // Use this to change the max lenngth (relative to screen size) of messages
         private static int MAX_LENGTH = 3 * Console.BufferWidth;
-        public enum MessageType
+        internal enum MessageType
         {
             HighPriorityMessage,
             Warning,
             Error
         }
-        public string Message;
-        public FancyLoggerBufferLine? Line;
-        public MessageType Type;
-        public string? Code;
-        public string? FilePath;
-        public int? LineNumber;
-        public int? ColumnNumber;
+        internal string Message;
+        internal FancyLoggerBufferLine? Line;
+        internal MessageType Type;
+        internal string? Code;
+        internal string? FilePath;
+        internal int? LineNumber;
+        internal int? ColumnNumber;
         public FancyLoggerMessageNode(LazyFormattedBuildEventArgs args)
         {
             Message = args.Message ?? string.Empty;
@@ -52,7 +52,7 @@ namespace Microsoft.Build.Logging.FancyLogger
             }
         }
 
-        public string ToANSIString()
+        internal string ToANSIString()
         {
             switch (Type)
             {
@@ -70,7 +70,7 @@ namespace Microsoft.Build.Logging.FancyLogger
             }
         }
 
-        public void Log()
+        internal void Log()
         {
             if (Line == null) return;
             FancyLoggerBuffer.UpdateLine(Line.Id, $"    └── {ToANSIString()}");

@@ -22,23 +22,23 @@ namespace Microsoft.Build.Logging.FancyLogger
             return Path.GetFileName(path);
         }
 
-        public int Id;
-        public string ProjectPath;
-        public string TargetFramework;
-        public bool Finished;
+        internal int Id;
+        internal string ProjectPath;
+        internal string TargetFramework;
+        internal bool Finished;
         // Line to display project info
-        public FancyLoggerBufferLine? Line;
+        internal FancyLoggerBufferLine? Line;
         // Targets
-        public int FinishedTargets;
-        public FancyLoggerBufferLine? CurrentTargetLine;
-        public FancyLoggerTargetNode? CurrentTargetNode;
+        internal int FinishedTargets;
+        internal FancyLoggerBufferLine? CurrentTargetLine;
+        internal FancyLoggerTargetNode? CurrentTargetNode;
         // Messages, errors and warnings
-        public List<FancyLoggerMessageNode> AdditionalDetails = new();
+        internal List<FancyLoggerMessageNode> AdditionalDetails = new();
         // Count messages, warnings and errors
-        public int MessageCount = 0;
-        public int WarningCount = 0;
-        public int ErrorCount = 0;
-        public FancyLoggerProjectNode(ProjectStartedEventArgs args)
+        internal int MessageCount = 0;
+        internal int WarningCount = 0;
+        internal int ErrorCount = 0;
+        internal FancyLoggerProjectNode(ProjectStartedEventArgs args)
         {
             Id = args.ProjectId;
             ProjectPath = args.ProjectFile!;
@@ -54,7 +54,7 @@ namespace Microsoft.Build.Logging.FancyLogger
             }
         }
 
-        public void Log()
+        internal void Log()
         {
             // Project details
             string lineContents = ANSIBuilder.Alignment.SpaceBetween(
@@ -86,7 +86,7 @@ namespace Microsoft.Build.Logging.FancyLogger
 
             // Current target details
             if (CurrentTargetNode == null) return;
-            string currentTargetLineContents = $"    └── {CurrentTargetNode.TargetName} : {CurrentTargetNode.CurrentTaskNode?.TaskName ?? String.Empty}";
+            string currentTargetLineContents = $"    └── {CurrentTargetNode.TargetName} : {CurrentTargetNode.CurrentTaskName}";
             if (CurrentTargetLine == null) CurrentTargetLine = FancyLoggerBuffer.WriteNewLineAfter(Line!.Id, currentTargetLineContents);
             else FancyLoggerBuffer.UpdateLine(CurrentTargetLine.Id, currentTargetLineContents);
 
@@ -99,19 +99,18 @@ namespace Microsoft.Build.Logging.FancyLogger
             }
         }
 
-        public FancyLoggerTargetNode AddTarget(TargetStartedEventArgs args)
+        internal FancyLoggerTargetNode AddTarget(TargetStartedEventArgs args)
         {
             CurrentTargetNode = new FancyLoggerTargetNode(args);
             return CurrentTargetNode;
         }
-        public FancyLoggerTaskNode? AddTask(TaskStartedEventArgs args)
+        internal void AddTask(TaskStartedEventArgs args)
         {
             // Get target id
             int targetId = args.BuildEventContext!.TargetId;
-            if (CurrentTargetNode?.Id == targetId) return CurrentTargetNode.AddTask(args);
-            else return null;
+            if (CurrentTargetNode?.Id == targetId) CurrentTargetNode.AddTask(args);
         }
-        public FancyLoggerMessageNode? AddMessage(BuildMessageEventArgs args)
+        internal FancyLoggerMessageNode? AddMessage(BuildMessageEventArgs args)
         {
             if (args.Importance != MessageImportance.High) return null;
             MessageCount++;
@@ -119,14 +118,14 @@ namespace Microsoft.Build.Logging.FancyLogger
             AdditionalDetails.Add(node);
             return node;
         }
-        public FancyLoggerMessageNode? AddWarning(BuildWarningEventArgs args)
+        internal FancyLoggerMessageNode? AddWarning(BuildWarningEventArgs args)
         {
             WarningCount++;
             FancyLoggerMessageNode node = new FancyLoggerMessageNode(args);
             AdditionalDetails.Add(node);
             return node;
         }
-        public FancyLoggerMessageNode? AddError(BuildErrorEventArgs args)
+        internal FancyLoggerMessageNode? AddError(BuildErrorEventArgs args)
         {
             ErrorCount++;
             FancyLoggerMessageNode node = new FancyLoggerMessageNode(args);

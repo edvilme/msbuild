@@ -10,14 +10,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Build.Logging.FancyLogger
 {
-    public class FancyLoggerBufferLine
+    internal class FancyLoggerBufferLine
     {
         private static int Counter = 0;
         private string _text = string.Empty;
-        public List<string> WrappedText { get; private set; } = new();
-        public int Id;
-        public bool ShouldWrapLines;
-        public string Text
+        internal List<string> WrappedText { get; private set; } = new();
+        internal int Id;
+        internal bool ShouldWrapLines;
+        internal string Text
         {
             get => _text;
             set
@@ -29,18 +29,18 @@ namespace Microsoft.Build.Logging.FancyLogger
             }
         }
 
-        public FancyLoggerBufferLine()
+        internal FancyLoggerBufferLine()
         {
             Id = Counter++;
             Text = string.Empty;
             ShouldWrapLines = false;
         }
-        public FancyLoggerBufferLine(string text)
+        internal FancyLoggerBufferLine(string text)
             : this()
         {
             Text = text;
         }
-        public FancyLoggerBufferLine(string text, bool shouldWrapLines)
+        internal FancyLoggerBufferLine(string text, bool shouldWrapLines)
             : this()
         {
             ShouldWrapLines = shouldWrapLines;
@@ -48,14 +48,14 @@ namespace Microsoft.Build.Logging.FancyLogger
         }
     }
 
-    public class FancyLoggerBuffer
+    internal class FancyLoggerBuffer
     {
         private static List<FancyLoggerBufferLine> Lines = new();
-        public static int TopLineIndex = 0;
-        public static string Footer = string.Empty;
+        internal static int TopLineIndex = 0;
+        internal static string Footer = string.Empty;
         private static bool AutoScrollEnabled = true;
         private static bool IsTerminated = false;
-        public static void Initialize()
+        internal static void Initialize()
         {
 
             Task.Run(() =>
@@ -100,7 +100,7 @@ namespace Microsoft.Build.Logging.FancyLogger
             });
         }
 
-        public static void Terminate()
+        internal static void Terminate()
         {
             IsTerminated = true;
             // Reset configuration for buffer and cursor, and clear screen
@@ -112,7 +112,7 @@ namespace Microsoft.Build.Logging.FancyLogger
         }
 
         #region Rendering
-        public static void Render()
+        internal static void Render()
         {
             if (IsTerminated) return;
             Console.Write(
@@ -145,7 +145,7 @@ namespace Microsoft.Build.Logging.FancyLogger
         }
         #endregion
         #region Line identification
-        public static int GetLineIndexById(int lineId)
+        internal static int GetLineIndexById(int lineId)
         {
             for (int i = 0; i < Lines.Count; i++)
             {
@@ -154,7 +154,7 @@ namespace Microsoft.Build.Logging.FancyLogger
             return -1;
         }
 
-        public static FancyLoggerBufferLine? GetLineById(int lineId)
+        internal static FancyLoggerBufferLine? GetLineById(int lineId)
         {
             int index = GetLineIndexById(lineId);
             if (index == -1) return null;
@@ -164,16 +164,16 @@ namespace Microsoft.Build.Logging.FancyLogger
 
         #region Line create, update and delete
         // Write new line
-        public static FancyLoggerBufferLine? WriteNewLineAfter(int lineId, string text)
+        internal static FancyLoggerBufferLine? WriteNewLineAfter(int lineId, string text)
         {
             return WriteNewLineAfter(lineId, text, true);
         }
-        public static FancyLoggerBufferLine? WriteNewLineAfter(int lineId, string text, bool shouldWrapLines)
+        internal static FancyLoggerBufferLine? WriteNewLineAfter(int lineId, string text, bool shouldWrapLines)
         {
             FancyLoggerBufferLine line = new FancyLoggerBufferLine(text, shouldWrapLines);
             return WriteNewLineAfter(lineId, line);
         }
-        public static FancyLoggerBufferLine? WriteNewLineAfter(int lineId, FancyLoggerBufferLine line)
+        internal static FancyLoggerBufferLine? WriteNewLineAfter(int lineId, FancyLoggerBufferLine line)
         {
             if (lineId != -1)
             {
@@ -191,22 +191,22 @@ namespace Microsoft.Build.Logging.FancyLogger
             return line;
         }
 
-        public static FancyLoggerBufferLine? WriteNewLine(string text)
+        internal static FancyLoggerBufferLine? WriteNewLine(string text)
         {
             return WriteNewLine(text, true);
         }
-        public static FancyLoggerBufferLine? WriteNewLine(string text, bool shouldWrapLines)
+        internal static FancyLoggerBufferLine? WriteNewLine(string text, bool shouldWrapLines)
         {
             FancyLoggerBufferLine line = new FancyLoggerBufferLine(text, shouldWrapLines);
             return WriteNewLine(line);
         }
-        public static FancyLoggerBufferLine? WriteNewLine(FancyLoggerBufferLine line)
+        internal static FancyLoggerBufferLine? WriteNewLine(FancyLoggerBufferLine line)
         {
             return WriteNewLineAfter(Lines.Count > 0 ? Lines.Last().Id : -1, line);
         }
 
         // Update line
-        public static FancyLoggerBufferLine? UpdateLine(int lineId, string text)
+        internal static FancyLoggerBufferLine? UpdateLine(int lineId, string text)
         {
             // Get line
             FancyLoggerBufferLine? line = GetLineById(lineId);
@@ -218,7 +218,7 @@ namespace Microsoft.Build.Logging.FancyLogger
         }
 
         // Delete line
-        public static void DeleteLine(int lineId)
+        internal static void DeleteLine(int lineId)
         {
             // Get line index
             int lineIndex = GetLineIndexById(lineId);
