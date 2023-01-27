@@ -1,5 +1,5 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -788,7 +788,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
 
             try
             {
-                importPath = FileUtilities.GetTemporaryFile();
+                importPath = FileUtilities.GetTemporaryFileName();
 
                 string import = ObjectModelHelpers.CleanupFileContents(@"
                     <Project ToolsVersion=""msbuilddefaulttoolsversion"" xmlns='msbuildnamespace' >
@@ -850,9 +850,9 @@ namespace Microsoft.Build.UnitTests.Evaluation
 
             try
             {
-                importPath = FileUtilities.GetTemporaryFile();
-                importPath2 = FileUtilities.GetTemporaryFile();
-                importPath3 = FileUtilities.GetTemporaryFile();
+                importPath = FileUtilities.GetTemporaryFileName();
+                importPath2 = FileUtilities.GetTemporaryFileName();
+                importPath3 = FileUtilities.GetTemporaryFileName();
 
                 string import = ObjectModelHelpers.CleanupFileContents(@"
                     <Project ToolsVersion=""msbuilddefaulttoolsversion"" xmlns='msbuildnamespace' >
@@ -926,8 +926,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
 
             try
             {
-                importPath1 = FileUtilities.GetTemporaryFile();
-                importPath2 = FileUtilities.GetTemporaryFile();
+                importPath1 = FileUtilities.GetTemporaryFileName();
+                importPath2 = FileUtilities.GetTemporaryFileName();
 
                 // "import1" imports "import2" and vice versa.
                 string import1 = ObjectModelHelpers.CleanupFileContents(@"
@@ -986,8 +986,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
 
                 try
                 {
-                    importPath1 = FileUtilities.GetTemporaryFile();
-                    importPath2 = FileUtilities.GetTemporaryFile();
+                    importPath1 = FileUtilities.GetTemporaryFileName();
+                    importPath2 = FileUtilities.GetTemporaryFileName();
 
                     // "import1" imports "import2" and vice versa.
                     string import1 = ObjectModelHelpers.CleanupFileContents(@"
@@ -1027,8 +1027,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
                     File.Delete(importPath1);
                     File.Delete(importPath2);
                 }
-            }
-           );
+            });
         }
         /// <summary>
         /// MSBuildDefaultTargets was not getting cleared out between reevaluations.
@@ -1761,7 +1760,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
                 ProjectRootElement import = ProjectRootElement.Create();
                 import.AddItemDefinition("i").AddMetadata("m", "%(m);m1");
 
-                file = FileUtilities.GetTemporaryFile();
+                file = FileUtilities.GetTemporaryFileName();
                 import.Save(file);
 
                 string content = ObjectModelHelpers.CleanupFileContents(@"
@@ -1907,7 +1906,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
             try
             {
                 // Should include imported items
-                file = FileUtilities.GetTemporaryFile();
+                file = FileUtilities.GetTemporaryFileName();
                 ProjectRootElement import = ProjectRootElement.Create(file);
                 import.AddItem("i", "i10");
                 import.Save();
@@ -1991,7 +1990,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
 
             try
             {
-                file = FileUtilities.GetTemporaryFile();
+                file = FileUtilities.GetTemporaryFileName();
                 ProjectRootElement import = ProjectRootElement.Create(file);
                 import.AddProperty("p", "0").Condition = "false";
                 import.AddProperty("p", "1");
@@ -3066,8 +3065,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
 
                 // Should not reach this point.
                 Assert.True(false);
-            }
-           );
+            });
         }
         /// <summary>
         /// Basic verification -- whitespace in the TreatAsLocalProperty definition should be trimmed.
@@ -4442,7 +4440,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
                 File.WriteAllText(primaryProject, projectContents);
                 File.WriteAllText(import, importContents);
 
-                InvalidProjectFileException ex = Assert.Throws<InvalidProjectFileException>( () =>
+                InvalidProjectFileException ex = Assert.Throws<InvalidProjectFileException>(() =>
                     {
                         Project unused = new Project(primaryProject, null, null);
                     })
@@ -4885,7 +4883,9 @@ namespace Microsoft.Build.UnitTests.Evaluation
             using (TestEnvironment env = TestEnvironment.Create())
             {
                 if (!string.IsNullOrWhiteSpace(envVarValue))
+                {
                     env.SetEnvironmentVariable("MsBuildLogPropertyTracking", envVarValue);
+                }
 
                 env.SetEnvironmentVariable("DEFINED_ENVIRONMENT_VARIABLE", "It's Defined!");
                 env.SetEnvironmentVariable("DEFINED_ENVIRONMENT_VARIABLE2", "It's also Defined!");

@@ -1,21 +1,65 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Microsoft.Build.Logging.FancyLogger
 {
     internal static class ANSIBuilder
     {
+        public static string ANSIRegex = @"\x1b(?:[@-Z\-_]|\[[0-?]*[ -\/]*[@-~])";
+        // TODO: This should replace ANSIRegex once FancyLogger's API is internal
+        public static Regex ANSIRegexRegex = new Regex(ANSIRegex);
         public static string ANSIRemove(string text)
         {
-            return Regex.Replace(text, "\\x1b(?:[@-Z\\-_]|\\[[0-?]*[ -\\/]*[@-~])", "");
+            return ANSIRegexRegex.Replace(text, "");
+        }
+
+        // TODO: This should be an optional parameter for ANSIBreakpoint(string text, int positioon, int initialPosition = 0)
+        public static int ANSIBreakpoint(string text, int position)
+        {
+            return ANSIBreakpoint(text, position, 0);
+        }
+        public static int ANSIBreakpoint(string text, int position, int initialPosition)
+        {
+            if (position >= text.Length)
+            {
+                return text.Length;
+            }
+            int nonAnsiIndex = 0;
+            // Match nextMatch = Regex.Match(text, ANSIRegex);
+            Match nextMatch = ANSIRegexRegex.Match(text, initialPosition);
+            int i = 0;
+            while (i < text.Length && nonAnsiIndex != position)
+            {
+                // Jump over ansi codes
+                if (i == nextMatch.Index && nextMatch.Length > 0)
+                {
+                    i += nextMatch.Length;
+                    nextMatch = nextMatch.NextMatch();
+                }
+                // Increment non ansi index
+                nonAnsiIndex++;
+                i++;
+            }
+            return i;
+        }
+
+        public static List<string> ANSIWrap(string text, int position)
+        {
+            ReadOnlySpan<char> textSpan = text.AsSpan();
+            List<string> result = new();
+            int breakpoint = ANSIBreakpoint(text, position);
+            while (textSpan.Length > breakpoint)
+            {
+                result.Add(textSpan.Slice(0, breakpoint).ToString());
+                textSpan = textSpan.Slice(breakpoint);
+                breakpoint = ANSIBreakpoint(text, position, breakpoint);
+            }
+            result.Add(textSpan.ToString());
+            return result;
         }
 
         public static class Alignment
@@ -24,7 +68,11 @@ namespace Microsoft.Build.Logging.FancyLogger
             {
                 string result = String.Empty;
                 string noFormatString = ANSIRemove(text);
-                if (noFormatString.Length > Console.BufferWidth) return text;
+                if (noFormatString.Length > Console.BufferWidth)
+                {
+                    return text;
+                }
+
                 int space = (Console.BufferWidth - noFormatString.Length) / 2;
                 result += new string(' ', space);
                 result += text;
@@ -36,7 +84,11 @@ namespace Microsoft.Build.Logging.FancyLogger
             {
                 string result = String.Empty;
                 string noFormatString = ANSIRemove(text);
-                if (noFormatString.Length > Console.BufferWidth) return text;
+                if (noFormatString.Length > Console.BufferWidth)
+                {
+                    return text;
+                }
+
                 int space = Console.BufferWidth - noFormatString.Length;
                 result += new string(' ', space);
                 result += text;
@@ -47,7 +99,11 @@ namespace Microsoft.Build.Logging.FancyLogger
             {
                 string result = String.Empty;
                 string noFormatString = ANSIRemove(text);
-                if (noFormatString.Length > Console.BufferWidth) return text;
+                if (noFormatString.Length > Console.BufferWidth)
+                {
+                    return text;
+                }
+
                 int space = Console.BufferWidth - noFormatString.Length;
                 result += text;
                 result += new string(' ', space);
@@ -59,10 +115,14 @@ namespace Microsoft.Build.Logging.FancyLogger
                 string result = String.Empty;
                 string leftNoFormatString = ANSIRemove(leftText);
                 string rightNoFormatString = ANSIRemove(rightText);
-                if (leftNoFormatString.Length + rightNoFormatString.Length > Console.BufferWidth) return leftText + rightText;
-                int space = Console.BufferWidth - (leftNoFormatString.Length + rightNoFormatString.Length) - 1;
+                if (leftNoFormatString.Length + rightNoFormatString.Length > Console.BufferWidth)
+                {
+                    return leftText + rightText;
+                }
+
+                int space = Console.BufferWidth - (leftNoFormatString.Length + rightNoFormatString.Length);
                 result += leftText;
-                result += new string(' ', space);
+                result += new string(' ', space - 1);
                 result += rightText;
                 return result;
             }
@@ -200,7 +260,8 @@ namespace Microsoft.Build.Logging.FancyLogger
             public static string UpAndScroll(int n)
             {
                 string result = "";
-                for (int i = 0; i < n; i++) {
+                for (int i = 0; i < n; i++)
+                {
                     result += "\x1bM";
                 }
                 return result;
@@ -236,8 +297,19 @@ namespace Microsoft.Build.Logging.FancyLogger
                 return String.Format("\x1b[s");
             }
 
-            public static string RestorePosition() {
+            public static string RestorePosition()
+            {
                 return String.Format("\x1b[u");
+            }
+
+            public static string Invisible()
+            {
+                return "\x1b[?25l";
+            }
+
+            public static string Visible()
+            {
+                return "\x1b[?25h";
             }
         }
 
@@ -250,7 +322,11 @@ namespace Microsoft.Build.Logging.FancyLogger
 
             public static string ForwardTab(int n)
             {
-                if (n == 0) return "";
+                if (n == 0)
+                {
+                    return "";
+                }
+
                 return String.Format("\x1b[{0}I", n);
             }
 
@@ -341,7 +417,7 @@ namespace Microsoft.Build.Logging.FancyLogger
 
             public static string Spinner(int n)
             {
-                char[] chars = { '\\', '|', '/', '-'};
+                char[] chars = { '\\', '|', '/', '-' };
                 return chars[n % (chars.Length - 1)].ToString();
             }
 

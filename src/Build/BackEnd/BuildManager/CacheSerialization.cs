@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.Build.BackEnd;
 using Microsoft.Build.Shared;
 
@@ -59,6 +60,27 @@ namespace Microsoft.Build.Execution
                         default:
                             ErrorUtilities.ThrowInternalErrorUnreachable();
                             break;
+                    }
+
+                    // Avoid creating new config and results caches if no projects were built in violation
+                    // of isolation mode.
+                    if (configCacheToSerialize.Count() > 1)
+                    {
+                        // We need to preserve all configurations to enable the scheduler to dump them and their
+                        // associated requests, so create new caches to serialize storing solely data
+                        // associated with the project specified to be built in isolation (and not any
+                        // data associated with referenced projects needed for said project to complete
+                        // its build).
+                        var tempConfigCacheToSerialize = new ConfigCache();
+
+                        // The project that was built in isolation mode has the
+                        // smallest configuration id.
+                        int smallestCacheConfigId = configCacheToSerialize.GetSmallestConfigId();
+                        tempConfigCacheToSerialize.AddConfiguration(configCacheToSerialize[smallestCacheConfigId]);
+                        configCacheToSerialize = tempConfigCacheToSerialize;
+                        var tempResultsCacheToSerialize = new ResultsCache();
+                        tempResultsCacheToSerialize.AddResult(resultsCacheToSerialize.GetResultsForConfiguration(smallestCacheConfigId));
+                        resultsCacheToSerialize = tempResultsCacheToSerialize;
                     }
 
                     translator.Translate(ref configCacheToSerialize);

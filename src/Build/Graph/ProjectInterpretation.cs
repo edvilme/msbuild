@@ -1,5 +1,5 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -105,12 +105,12 @@ namespace Microsoft.Build.Graph
                 var requesterPlatform = "";
                 var requesterPlatformLookupTable = "";
 
-                if ( !projectReferenceItem.HasMetadata(SetPlatformMetadataName) && ConversionUtilities.ValidBooleanTrue(requesterInstance.GetPropertyValue(EnableDynamicPlatformResolutionMetadataName)))
+                if (!projectReferenceItem.HasMetadata(SetPlatformMetadataName) && ConversionUtilities.ValidBooleanTrue(requesterInstance.GetPropertyValue(EnableDynamicPlatformResolutionMetadataName)))
                 {
                     requesterPlatform = requesterInstance.GetPropertyValue("Platform");
                     requesterPlatformLookupTable = requesterInstance.GetPropertyValue("PlatformLookupTable");
 
-                    var  projectInstance = _projectInstanceFactory(
+                    var projectInstance = _projectInstanceFactory(
                         projectReferenceFullPath,
                         null, // Platform negotiation requires an evaluation with no global properties first
                         _projectCollection);
@@ -164,30 +164,28 @@ namespace Microsoft.Build.Graph
         }
 
         /// <summary>
-        /// To avoid calling nuget at graph construction time, the graph is initially constructed with outer build nodes referencing inner build nodes.
-        /// However, at build time, for non root outer builds, the inner builds are NOT referenced by the outer build, but by the nodes referencing the
-        /// outer build. Change the graph to mimic this behaviour.
-        /// Examples
-        /// OuterAsRoot -> Inner go to OuterAsRoot -> Inner. Inner builds remain the same, parented to their outer build
-        /// Node -> Outer -> Inner go to: Node -> Outer; Node->Inner; Outer -> empty. Inner builds get reparented to Node
+        /// To avoid calling nuget at graph construction time, the graph is initially constructed with nodes referencing outer build nodes which in turn
+        /// reference inner build nodes. However at build time, the inner builds are referenced directly by the nodes referencing the outer build.
+        /// Change the graph to mimic this behaviour.
+        /// Example: Node -> Outer -> Inner go to: Node -> Outer; Node->Inner; Outer -> Inner. Inner build edges get added to Node.
         /// </summary>
-        public void ReparentInnerBuilds(Dictionary<ConfigurationMetadata, ParsedProject> allNodes, GraphBuilder graphBuilder)
+        public void AddInnerBuildEdges(Dictionary<ConfigurationMetadata, ParsedProject> allNodes, GraphBuilder graphBuilder)
         {
-            foreach (var node in allNodes)
+            foreach (KeyValuePair<ConfigurationMetadata, ParsedProject> node in allNodes)
             {
-                var outerBuild = node.Value.GraphNode;
+                ProjectGraphNode outerBuild = node.Value.GraphNode;
 
                 if (GetProjectType(outerBuild.ProjectInstance) == ProjectType.OuterBuild && outerBuild.ReferencingProjects.Count != 0)
                 {
-                    foreach (var innerBuild in outerBuild.ProjectReferences)
+                    foreach (ProjectGraphNode innerBuild in outerBuild.ProjectReferences)
                     {
-                        foreach (var outerBuildReferencingProject in outerBuild.ReferencingProjects)
+                        foreach (ProjectGraphNode outerBuildReferencingProject in outerBuild.ReferencingProjects)
                         {
                             // Which edge should be used to connect the outerBuildReferencingProject to the inner builds?
                             // Decided to use the outerBuildBuildReferencingProject -> outerBuild edge in order to preserve any extra metadata
                             // information that may be present on the edge, like the "Targets" metadata which specifies what
                             // targets to call on the references.
-                            var newInnerBuildEdge = graphBuilder.Edges[(outerBuildReferencingProject, outerBuild)];
+                            ProjectItemInstance newInnerBuildEdge = graphBuilder.Edges[(outerBuildReferencingProject, outerBuild)];
 
                             if (outerBuildReferencingProject.ProjectReferences.Contains(innerBuild))
                             {
@@ -204,8 +202,6 @@ namespace Microsoft.Build.Graph
                             outerBuildReferencingProject.AddProjectReference(innerBuild, newInnerBuildEdge, graphBuilder.Edges);
                         }
                     }
-
-                    outerBuild.RemoveReferences(graphBuilder.Edges);
                 }
             }
         }
@@ -237,8 +233,7 @@ namespace Microsoft.Build.Graph
         /// </remarks>
         private static GlobalPropertyPartsForMSBuildTask ProjectReferenceGlobalPropertiesModifier(
             GlobalPropertyPartsForMSBuildTask defaultParts,
-            ProjectItemInstance projectReference
-        )
+            ProjectItemInstance projectReference)
         {
             // ProjectReference defines yet another metadata name containing properties to undefine. Merge it in if non empty.
             var globalPropertiesToRemove = SplitPropertyNames(projectReference.GetMetadataValue(GlobalPropertiesToRemoveMetadataName));
@@ -298,7 +293,7 @@ namespace Microsoft.Build.Graph
             }
         }
 
-        delegate GlobalPropertyPartsForMSBuildTask GlobalPropertiesModifier(GlobalPropertyPartsForMSBuildTask defaultParts, ProjectItemInstance projectReference);
+        private delegate GlobalPropertyPartsForMSBuildTask GlobalPropertiesModifier(GlobalPropertyPartsForMSBuildTask defaultParts, ProjectItemInstance projectReference);
 
         /// <summary>
         ///     Gets the effective global properties for an item that will get passed to <see cref="MSBuild.Projects"/>.
